@@ -1,10 +1,11 @@
 import face_recognition
 from rtree import index 
 from pathlib import Path
+import numpy as np
 import heapq
 
 def knn_search_sequential_pq(k, Q, n):  
-    path = "lfw-a\lfw\\"
+    path = "lfw-a/lfw/"
     basepath = Path(path)
     aux = 0  
     route = []
@@ -48,6 +49,22 @@ def knn_search_rtree(k, Q):
         coordinatesListQuery.append(i)
     return list(Rtree.nearest(coordinatesListQuery, k, 'raw'))
 
+
+def bounding_box(v: np.ndarray, r: float) -> np.ndarray:
+    return np.concatenate((v-(r/2), v+(r/2)), axis=None)
+
+def range_search_rtree(query, radio):
+    p = index.Property()
+    p.dimension = 128
+    p.buffering_capacity = 10
+    Rtree = index.Index('RtreeRangeSearch', properties=p)
+    return [
+        n.object for n in Rtree.intersection(bounding_box(query, radio), objects=True)
+        if n is not None and isinstance(n.object, str)
+    ]
+
+
 if __name__ == "__main__":
-    print(knn_search_sequential_pq(3,  face_recognition.face_encodings(face_recognition.load_image_file('lfw-a\lfw\Aaron_Pena\Aaron_Pena_0001.jpg'))[0], 50))
-    print(knn_search_rtree(3,  face_recognition.face_encodings(face_recognition.load_image_file('lfw-a\lfw\Aaron_Pena\Aaron_Pena_0001.jpg'))[0]))
+    # print(knn_search_sequential_pq(3,  face_recognition.face_encodings(face_recognition.load_image_file('lfw-a/lfw/Aaron_Pena/Aaron_Pena_0001.jpg'))[0], 50))
+    print(knn_search_rtree(3,  face_recognition.face_encodings(face_recognition.load_image_file('lfw-a/lfw/Aaron_Pena/Aaron_Pena_0001.jpg'))[0]))
+    print(range_search_rtree(face_recognition.face_encodings(face_recognition.load_image_file('lfw-a/lfw/Aaron_Pena/Aaron_Pena_0001.jpg'))[0], 3.0 ))
